@@ -1,0 +1,385 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>TOPSAN 6G - He has blue eyes. Connect 4</title>
+
+<style>
+*{
+  box-sizing:border-box;
+}
+
+body{
+  margin:0;
+  padding:15px;
+  font-family:Arial, sans-serif;
+  background:#f4f8ff;
+  text-align:center;
+}
+
+h1{
+  color:#1e3a8a;
+  margin-bottom:10px;
+}
+
+#status{
+  font-size:1.2rem;
+  font-weight:bold;
+  margin-bottom:15px;
+}
+
+.controls{
+  margin-bottom:15px;
+}
+
+button{
+  padding:10px 18px;
+  border:none;
+  border-radius:8px;
+  font-size:1rem;
+  cursor:pointer;
+}
+
+#newGame{
+  background:#2563eb;
+  color:white;
+}
+
+#winner{
+  margin:12px;
+  font-size:1.5rem;
+  font-weight:bold;
+  color:#9333ea;
+  min-height:40px;
+}
+
+#board{
+  display:grid;
+  grid-template-columns:repeat(7, 1fr);
+  gap:6px;
+  max-width:1100px;
+  margin:0 auto;
+}
+
+.cell{
+  min-height:90px;
+  border:2px solid #dbeafe;
+  border-radius:10px;
+  background:white;
+  padding:8px;
+  font-size:0.9rem;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  text-align:center;
+  cursor:pointer;
+  transition:.2s;
+  user-select:none;
+}
+
+.cell:hover{
+  transform:scale(1.03);
+}
+
+.red{
+  background:#ef4444;
+  color:white;
+  border-color:#dc2626;
+}
+
+.yellow{
+  background:#facc15;
+  color:black;
+  border-color:#eab308;
+}
+.available{
+border:5px solid #22c55e !important;
+box-shadow:0 0 18px #22c55e;
+animation:pulse 1s infinite;
+}
+
+@keyframes pulse{
+0%{transform:scale(1);}
+50%{transform:scale(1.05);}
+100%{transform:scale(1);}
+}
+
+@media (max-width:900px){
+
+  #board{
+    grid-template-columns:repeat(6,1fr);
+  }
+
+  .cell{
+    min-height:80px;
+    font-size:0.82rem;
+  }
+}
+
+@media (max-width:650px){
+
+  #board{
+    grid-template-columns:repeat(4,1fr);
+  }
+
+  .cell{
+    min-height:75px;
+    font-size:0.78rem;
+  }
+}
+</style>
+</head>
+<body>
+
+<h1>🌞 Topsan 6G  'He has blue eyes.' Connect 4</h1>
+
+<div id="status">🔴 Red Team's Turn</div>
+
+<div class="controls">
+  <button id="newGame">🔄 New Game</button>
+</div>
+
+<div id="winner"></div>
+
+<div id="board"></div>
+
+<script>
+
+const sentences = [
+"What does she look like?",
+"What does he look like?",
+"Anna has green eyes.",
+"Peter has blue eyes.",
+"Jane has short hair.",
+
+"Daniel has long hair.",
+"I have brown eyes.",
+"I have long hair.",
+"She has black hair.",
+"He has short hair.",
+"He has green eyes.",
+"She has blond hair.",
+
+"He is wearing green glasses.",
+"He is wearing black pants.",
+
+"She is wearing a red skirt.",
+"She is wearing a yellow shirt.",
+"He is wearing red glasses.",
+"She is wearing a pink hat.",
+"He is wearing blue shorts.",
+"She is wearing red glasses.",
+"He has short black hair.",
+
+"She has long brown hair.",
+"He is wearing a blue shirt and white pants.",
+"She is wearing a red dress.",
+"She has blue eyes and short brown hair.",
+"She is wearing a yellow dress.",
+"What does she look like?",
+
+"What does she look like?",
+"What does he look like?",
+"What does he look like?",
+"What does she look like?",
+
+"Amy has long hair.",
+"Mohan is wearing glasses.",
+"Tom has blue shorts.",
+
+"Sarah has short hair.",
+"Sarah is wearing black glasses.",
+"Sarah is wearing a yellow shirt.",
+"Sarah is wearing blue pants.",
+"Sarah is Amy's cousin",
+"What is she wearing?",
+"He has short gray hair.",
+"He is very tall.",
+];
+
+const COLS = 7;
+const ROWS = 6;
+
+let currentPlayer = "red";
+let gameOver = false;
+let boardState = [];
+
+const board = document.getElementById("board");
+const statusText = document.getElementById("status");
+const winnerText = document.getElementById("winner");
+
+function shuffle(arr){
+  return [...arr].sort(()=>Math.random()-0.5);
+}
+
+function startGame(){
+
+  gameOver = false;
+  currentPlayer = "red";
+  winnerText.textContent = "";
+  statusText.textContent = "🔴 Red Team's Turn";
+
+  board.innerHTML = "";
+
+  const shuffled = shuffle(sentences);
+
+  boardState = [];
+
+  for(let r=0;r<ROWS;r++){
+    boardState[r] = [];
+
+    for(let c=0;c<COLS;c++){
+
+      const text = shuffled[r*COLS+c];
+
+      boardState[r][c] = "";
+
+      const cell = document.createElement("div");
+      cell.className = "cell";
+      cell.textContent = text;
+      cell.dataset.row = r;
+      cell.dataset.col = c;
+
+      cell.addEventListener("click", ()=>claimCell(cell,r,c));
+
+      board.appendChild(cell);
+    }
+  }
+  updateAvailableCells();
+}
+
+
+
+function claimCell(cell,row,col){
+
+if(gameOver) return;
+
+if(boardState[row][col] !== ""){
+alert("This space is already taken.");
+return;
+}
+
+let lowestEmpty = -1;
+
+for(let r = ROWS - 1; r >= 0; r--){
+if(boardState[r][col] === ""){
+lowestEmpty = r;
+break;
+}
+}
+
+if(row !== lowestEmpty){
+alert("⚠ Choose the bottom empty space first!");
+return;
+}
+
+boardState[row][col] = currentPlayer;
+cell.classList.add(currentPlayer);
+updateAvailableCells();
+
+if(checkWin(row,col,currentPlayer)){
+gameOver = true;
+
+winnerText.textContent =
+  currentPlayer === "red"
+  ? "🎉 Red Team Wins!"
+  : "🎉 Yellow Team Wins!";
+return;
+
+}
+
+currentPlayer =
+currentPlayer === "red"
+? "yellow"
+: "red";
+
+statusText.textContent =
+currentPlayer === "red"
+? "🔴 Red Team's Turn"
+: "🟡 Yellow Team's Turn";
+}
+
+
+
+
+
+function countDirection(row,col,dr,dc,player){
+
+  let count = 1;
+
+  let r=row+dr;
+  let c=col+dc;
+
+  while(
+    r>=0 && r<ROWS &&
+    c>=0 && c<COLS &&
+    boardState[r][c]===player
+  ){
+    count++;
+    r+=dr;
+    c+=dc;
+  }
+
+  r=row-dr;
+  c=col-dc;
+
+  while(
+    r>=0 && r<ROWS &&
+    c>=0 && c<COLS &&
+    boardState[r][c]===player
+  ){
+    count++;
+    r-=dr;
+    c-=dc;
+  }
+
+  return count;
+}
+
+
+function updateAvailableCells(){
+
+document.querySelectorAll(".cell")
+.forEach(cell=>cell.classList.remove("available"));
+
+for(let c=0;c<COLS;c++){
+
+for(let r=ROWS-1;r>=0;r--){
+
+  if(boardState[r][c] === ""){
+
+    const index = r * COLS + c;
+    board.children[index]
+      .classList.add("available");
+
+    break;
+  }
+}
+
+}
+}
+
+
+function checkWin(row,col,player){
+
+  return (
+    countDirection(row,col,0,1,player) >= 4 ||
+    countDirection(row,col,1,0,player) >= 4 ||
+    countDirection(row,col,1,1,player) >= 4 ||
+    countDirection(row,col,1,-1,player) >= 4
+  );
+}
+
+document.getElementById("newGame")
+.addEventListener("click",startGame);
+
+
+
+startGame();
+
+</script>
+
+</body>
+</html>
